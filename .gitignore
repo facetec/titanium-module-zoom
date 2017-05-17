@@ -1,0 +1,8 @@
+**/build.properties
+
+android/build
+android/dist
+android/libs/**/*.so
+
+iphone/build
+iphone/*.zip

@@ -1,0 +1,18 @@
+#
+# this is your module manifest and used by Titanium
+# during compilation, packaging, distribution, etc.
+#
+version: 1.0.0
+apiversion: 3
+architectures: armeabi-v7a x86
+description: ZoomAuthentication
+author: Your Name
+license: Specify your license
+copyright: Copyright (c) 2017 by Your Company
+
+# these should not be edited
+name: ZoomAuthentication
+moduleid: com.facetec.ti.zoom
+guid: dcd1184e-c696-46a8-ae8f-5b9faef2ffa7
+platform: android
+minsdk: 6.0.4.GA
