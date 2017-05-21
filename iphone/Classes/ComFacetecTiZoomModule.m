@@ -10,6 +10,8 @@
 #import "TiHost.h"
 #import "TiUtils.h"
 
+@import ZoomAuthentication;
+
 @implementation ComFacetecTiZoomModule
 
 #pragma mark Internal
@@ -87,21 +89,9 @@
 
 #pragma Public APIs
 
--(id)example:(id)args
-{
-	// example method
-	return @"hello world";
-}
 
--(id)exampleProp
-{
-	// example property getter
-	return @"hello world";
-}
-
--(void)setExampleProp:(id)value
-{
-	// example property setter
+-(id)version {
+    return [[Zoom sdk] version];
 }
 
 @end

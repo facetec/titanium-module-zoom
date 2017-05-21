@@ -10,4 +10,7 @@ android/lib/*
 android/platform/android/res/*
 
 iphone/build
-iphone/*.zip
+iphone/com.facetec.ti.*.zip
+iphone/Resources
+iphone/**/xcuserdata/**
+
