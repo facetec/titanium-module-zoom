@@ -2,11 +2,11 @@
 # this is your module manifest and used by Titanium
 # during compilation, packaging, distribution, etc.
 #
-version: 1.0.0
+version: 5.0.3
 apiversion: 3
 architectures: armeabi-v7a x86
 description: ZoomAuthentication
-author: Your Name
+author: FaceTec, Inc.
 license: Specify your license
 copyright: Copyright (c) 2017 by Your Company
 

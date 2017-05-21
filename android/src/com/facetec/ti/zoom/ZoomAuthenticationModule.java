@@ -8,13 +8,14 @@
  */
 package com.facetec.ti.zoom;
 
+import com.facetec.zoom.sdk.ZoomSDK;
+
 import org.appcelerator.kroll.KrollModule;
 import org.appcelerator.kroll.annotations.Kroll;
 
 import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.kroll.common.Log;
 import org.appcelerator.kroll.common.TiConfig;
-
 
 @Kroll.module(name="ZoomAuthentication", id="com.facetec.ti.zoom")
 public class ZoomAuthenticationModule extends KrollModule
@@ -27,8 +28,7 @@ public class ZoomAuthenticationModule extends KrollModule
 	// You can define constants with @Kroll.constant, for example:
 	// @Kroll.constant public static final String EXTERNAL_NAME = value;
 
-	public ZoomAuthenticationModule()
-	{
+	public ZoomAuthenticationModule() {
 		super();
 	}
 
@@ -39,27 +39,10 @@ public class ZoomAuthenticationModule extends KrollModule
 		// put module init code that needs to run when the application is created
 	}
 
-	// Methods
-	@Kroll.method
-	public String example()
-	{
-		Log.d(LCAT, "example called");
-		return "hello world";
-	}
-
-	// Properties
-	@Kroll.getProperty
-	public String getExampleProp()
-	{
-		Log.d(LCAT, "get example property");
-		return "hello world";
-	}
-
-
-	@Kroll.setProperty
-	public void setExampleProp(String value) {
-		Log.d(LCAT, "set example property: " + value);
-	}
-
+	@Kroll.getProperty 
+    public String getVersion()
+    {
+        return ZoomSDK.version();
+    }
 }
 

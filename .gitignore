@@ -1,8 +1,13 @@
 **/build.properties
 
+android/.idea
+android/*.iml
+android/assets/*
 android/build
 android/dist
 android/libs/**/*.so
+android/lib/*
+android/platform/android/res/*
 
 iphone/build
 iphone/*.zip
