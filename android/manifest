@@ -13,6 +13,7 @@ copyright: Copyright (c) 2017 by Your Company
 # these should not be edited
 name: ZoomAuthentication
 moduleid: com.facetec.ti.zoom
+respackage: com.facetec.zoom.sdk
 guid: dcd1184e-c696-46a8-ae8f-5b9faef2ffa7
 platform: android
 minsdk: 6.0.4.GA
