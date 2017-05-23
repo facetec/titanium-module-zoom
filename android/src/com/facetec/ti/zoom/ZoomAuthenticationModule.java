@@ -8,14 +8,30 @@
  */
 package com.facetec.ti.zoom;
 
-import com.facetec.zoom.sdk.ZoomSDK;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.os.AsyncTask;
+import android.support.annotation.NonNull;
 
-import org.appcelerator.kroll.KrollModule;
+import com.facetec.zoom.sdk.*;
+
 import org.appcelerator.kroll.annotations.Kroll;
+import org.appcelerator.kroll.common.Log;
+import org.appcelerator.kroll.KrollDict;
+import org.appcelerator.kroll.KrollFunction;
+import org.appcelerator.kroll.KrollModule;
+import org.appcelerator.titanium.util.TiActivityResultHandler;
+import org.appcelerator.titanium.util.TiActivitySupport;
 
 import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.kroll.common.Log;
 import org.appcelerator.kroll.common.TiConfig;
+
+import static com.facetec.zoom.sdk.ZoomAuthenticationStatus.USER_WAS_AUTHENTICATED;
+import static com.facetec.zoom.sdk.ZoomAuthenticationStatus.USER_WAS_AUTHENTICATED_WITH_FALLBACK_STRATEGY;
+import static com.facetec.zoom.sdk.ZoomEnrollmentStatus.USER_WAS_ENROLLED;
+import static com.facetec.zoom.sdk.ZoomEnrollmentStatus.USER_WAS_ENROLLED_WITH_FALLBACK_STRATEGY;
 
 @Kroll.module(name="ZoomAuthentication", id="com.facetec.ti.zoom")
 public class ZoomAuthenticationModule extends KrollModule
@@ -43,6 +59,220 @@ public class ZoomAuthenticationModule extends KrollModule
     public String getVersion()
     {
         return ZoomSDK.version();
+    }
+
+    @Kroll.method
+    public void initialize(final String appToken, final KrollFunction callback) {
+        final Activity activity = TiApplication.getAppRootOrCurrentActivity();
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... ignore) {
+                ZoomSDK.preload(activity);
+                ZoomSDK.initialize(activity, appToken, ZoomStrategy.ZOOM_ONLY, new ZoomSDK.InitializeCallback() {
+                    @Override
+                    public void onCompletion(boolean successful) {
+                        KrollDict result = new KrollDict();
+                        result.put("successful", successful);
+                        if (!successful) {
+                            String status = getSdkStatusString(activity);
+                            result.put("status", status);
+                        }
+                        callback.call(getKrollObject(), result);
+                    }
+                });
+                return null;
+            }
+        }.execute();
+    }
+
+    @Kroll.getProperty
+    public String sdkStatus() {
+        Activity activity = TiApplication.getAppRootOrCurrentActivity();
+        return getSdkStatusString(activity);
+    }
+
+    @Kroll.method 
+    public String getUserEnrollmentStatus(String userId) {
+        Context context = TiApplication.getAppRootOrCurrentActivity();
+        ZoomSDK.UserEnrollmentStatus status = ZoomSDK.getUserEnrollmentStatus(context, userId);
+        switch (status) {
+            case USER_ENROLLED:
+                return "Enrolled";
+            case USER_INVALIDATED:
+                return "Invalidated";
+            case USER_NOT_ENROLLED:
+            default:
+                return "NotEnrolled";
+        }
+    }
+
+    @Kroll.method
+    public boolean isUserEnrolled(String userId) {
+        Context context = TiApplication.getAppRootOrCurrentActivity();
+        ZoomSDK.UserEnrollmentStatus status = ZoomSDK.getUserEnrollmentStatus(context, userId);
+        return status == ZoomSDK.UserEnrollmentStatus.USER_ENROLLED;
+    }
+
+    @Kroll.method
+    public void enroll(String userId, String encryptionSecret, KrollFunction callback) {
+        Activity activity = TiApplication.getAppCurrentActivity();
+        
+        Intent intent = new Intent(activity, ZoomEnrollmentActivity.class);
+        intent.putExtra(ZoomSDK.EXTRA_ENROLLMENT_USER_ID, userId);
+        intent.putExtra(ZoomSDK.EXTRA_USER_ENCRYPTION_SECRET, encryptionSecret);
+
+        ((TiActivitySupport)activity).launchActivityForResult(intent, ZoomSDK.REQUEST_CODE_ENROLLMENT, new EnrollmentResultHandler(callback));
+    }
+
+    @Kroll.method
+    public void authenticate(String userId, String encryptionSecret, KrollFunction callback) {
+        Activity activity = TiApplication.getAppCurrentActivity();
+        
+        Intent intent = new Intent(activity, ZoomAuthenticationActivity.class);
+        intent.putExtra(ZoomSDK.EXTRA_AUTHENTICATION_USER_ID, userId);
+        intent.putExtra(ZoomSDK.EXTRA_USER_ENCRYPTION_SECRET, encryptionSecret);
+
+        ((TiActivitySupport)activity).launchActivityForResult(intent, ZoomSDK.REQUEST_CODE_ENROLLMENT, new AuthResultHandler(callback));
+    }
+
+    private class EnrollmentResultHandler implements TiActivityResultHandler {
+        private KrollFunction callback;
+
+        EnrollmentResultHandler(KrollFunction callback) {
+            this.callback = callback;
+        }
+
+        @Override
+        public void onResult(Activity activity, int requestCode, int resultCode, Intent data) {
+            ZoomEnrollmentResult result = data.getParcelableExtra(ZoomSDK.EXTRA_ENROLL_RESULTS);
+            KrollDict resultDict = new KrollDict();
+            
+            ZoomEnrollmentStatus status = result.getStatus();
+            resultDict.put("successful", (status == USER_WAS_ENROLLED || status == USER_WAS_ENROLLED_WITH_FALLBACK_STRATEGY));
+            resultDict.put("status", convertZoomEnrollmentStatus(status));
+            callback.call(getKrollObject(), resultDict);
+        }
+
+        @Override
+        public void onError(Activity activity, int requestCode, Exception e) {
+            KrollDict resultDict = new KrollDict();
+            resultDict.put("successful", false);
+            resultDict.put("error", e.getMessage());
+            callback.call(getKrollObject(), resultDict);
+        }
+    }
+
+    private class AuthResultHandler implements TiActivityResultHandler {
+        private KrollFunction callback;
+
+        AuthResultHandler(KrollFunction callback) {
+            this.callback = callback;
+        }
+
+        @Override
+        public void onResult(Activity activity, int requestCode, int resultCode, Intent data) {
+            ZoomAuthenticationResult result = data.getParcelableExtra(ZoomSDK.EXTRA_AUTH_RESULTS);     
+            KrollDict resultDict = new KrollDict();
+            
+            ZoomAuthenticationStatus status = result.getStatus();
+            resultDict.put("successful", (status == USER_WAS_AUTHENTICATED || status == USER_WAS_AUTHENTICATED_WITH_FALLBACK_STRATEGY));
+            resultDict.put("status", convertZoomAuthenticationStatus(status));
+            callback.call(getKrollObject(), resultDict);
+        }
+
+        @Override
+        public void onError(Activity activity, int requestCode, Exception e) {
+            KrollDict resultDict = new KrollDict();
+            resultDict.put("successful", false);
+            resultDict.put("error", e.getMessage());
+            callback.call(getKrollObject(), resultDict);
+        }
+    }
+
+    @NonNull
+    private static String getSdkStatusString(Context context) {
+        ZoomSDK.ZoomSDKStatus status = ZoomSDK.getStatus(context);
+
+        switch (status) {
+            case NEVER_INITIALIZED:
+                return "NeverInitialized";
+            case INITIALIZED:
+                return "Initialized";
+            case INVALID_TOKEN:
+                return "InvalidToken";
+            case VERSION_DEPRECATED:
+                return "VersionDeprecated";
+            case DEVICE_INSECURE:
+                return "DeviceInsecure";
+            case NETWORK_ISSUES:
+            default:
+                return "NetworkIssues";
+        }
+    }
+
+    private static String convertZoomEnrollmentStatus(ZoomEnrollmentStatus status) {
+        // Note: These string values should match exactly with the iOS implementation
+        switch (status) {
+            case APP_TOKEN_NOT_VALID:
+                return "InvalidToken";
+            case USER_WAS_ENROLLED:
+            case USER_WAS_ENROLLED_WITH_FALLBACK_STRATEGY:
+                return "Enrolled";
+            case USER_CANCELLED:
+                return "UserCancelled";
+            case ENROLLMENT_TIMED_OUT:
+                return "Timeout";
+            case FAILED_DUE_TO_CAMERA_ERROR:
+                return "CameraError";
+            case FAILED_DUE_TO_INTERNAL_ERROR:
+                return "InternalError";
+            case FAILED_DUE_TO_OS_CONTEXT_SWITCH:
+                return "OSContextSwitch";
+            case WIFI_NOT_ON_IN_DEV_MODE:
+                return "WifiNotOnInDevMode";
+            case NETWORKING_MISSING_IN_DEV_MODE:
+                return "NoConnectionInDevMode";
+            case CAMERA_PERMISSION_DENIED:
+                return "CameraPermissionDenied";
+            case USER_NOT_ENROLLED:
+            case FAILED_BECAUSE_USER_COULD_NOT_VALIDATE_FINGERPRINT:
+            default:
+                return "NotEnrolled";
+        }
+    }
+
+    private static String convertZoomAuthenticationStatus(ZoomAuthenticationStatus status) {
+        // Note: These string values should match exactly with the iOS implementation
+        switch (status) {
+            case APP_TOKEN_NOT_VALID:
+                return "AppTokenNotValid";
+            case USER_WAS_AUTHENTICATED:
+            case USER_WAS_AUTHENTICATED_WITH_FALLBACK_STRATEGY:
+                return "Authenticated";
+            case AUTHENTICATION_TIMED_OUT:
+                return "Timeout";
+            case USER_FAILED_AUTHENTICATION:
+                return "FailedAuthentication";
+            case WIFI_NOT_ON_IN_DEV_MODE:
+                return "WifiNotOnInDevMode";
+            case NETWORKING_MISSING_IN_DEV_MODE:
+                return "NoConnectionInDevMode";
+            case CAMERA_PERMISSIONS_DENIED:
+                return "CameraPermissionDenied";
+            case USER_MUST_ENROLL:
+                return "UserMustEnroll";
+            case USER_FAILED_AUTHENTICATION_AND_WAS_DELETED:
+                return "FailedAndWasDeleted";
+            case SESSION_FAILED_DUE_TO_OS_CONTEXT_SWITCH:
+                return "OSContextSwitch";
+            case FAILED_DUE_TO_CAMERA_ERROR:
+                return "CameraError";
+            case FAILED_DUE_TO_INTERNAL_ERROR:
+                return "InternalError";
+            case USER_CANCELLED:
+            default:
+                return "UserCancelled";
+        }
     }
 }
 

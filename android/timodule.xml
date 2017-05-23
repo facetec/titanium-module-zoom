@@ -1,13 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ti:module xmlns:ti="http://ti.appcelerator.org" xmlns:android="http://schemas.android.com/apk/res/android">
-	<!--
-		Similar to tiapp.xml, but contains module/platform specific
-		configuration in <iphone>, <android>, and <mobileweb> sections
-	-->
-	<iphone>
-	</iphone>
-	<android xmlns:android="http://schemas.android.com/apk/res/android">
-	</android>
-	<mobileweb>
-	</mobileweb>
+    <!--
+            Similar to tiapp.xml, but contains module/platform specific
+            configuration in <iphone>, <android>, and <mobileweb> sections
+    -->
+    <iphone>
+    </iphone>
+    <android xmlns:android="http://schemas.android.com/apk/res/android">
+      <manifest>
+        <application>
+            <activity
+                android:name="com.facetec.zoom.sdk.ZoomEnrollmentActivity"
+                android:screenOrientation="portrait"
+                android:configChanges="orientation|keyboardHidden"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            </activity>
+            <activity
+                android:name="com.facetec.zoom.sdk.ZoomAuthenticationActivity"
+                android:screenOrientation="portrait"
+                android:configChanges="orientation|keyboardHidden"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            </activity>
+        </application>
+        <uses-permission android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY"/>
+        <uses-permission android:name="android.permission.VIBRATE"/>
+        <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+        <uses-permission android:name="android.permission.INTERNET"/>
+        <uses-permission android:name="android.permission.CAMERA" />
+        </manifest>
+    </android>
+    <mobileweb>
+    </mobileweb>
 </ti:module>
