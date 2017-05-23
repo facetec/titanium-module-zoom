@@ -9,6 +9,7 @@
 #import "TiBase.h"
 #import "TiHost.h"
 #import "TiUtils.h"
+#import "TiApp.h"
 
 @import ZoomAuthentication;
 
@@ -94,4 +95,210 @@
     return [[Zoom sdk] version];
 }
 
+-(void)initialize:(id)args
+{
+    ENSURE_UI_THREAD(initialize, args);
+    
+    NSString* appToken = [args objectAtIndex:0];
+    NSLog(@"[INFO] App token %@", appToken);
+    __block KrollCallback* callback = [[args objectAtIndex:1] retain];
+    
+    [[Zoom sdk] preload];
+    
+    [[Zoom sdk] initializeWithAppToken:appToken enrollmentStrategy:ZoomStrategyZoomOnly completion:^ void (BOOL validationResult) {
+        if (validationResult) {
+            [self _fireCallback:callback withObject:@{@"successful": @YES}];
+        }
+        else {
+            NSString* statusStr = [self _getSdkStatusString];
+            [self _fireCallback:callback withObject:@{@"successful": @NO, @"status": statusStr}];
+        }
+        RELEASE_TO_NIL(callback);
+    }];
+}
+
+-(void)enroll:(id)args
+{
+    NSString* userId = [args objectAtIndex:0];
+    NSString* encryptionSecret = [args objectAtIndex:1];
+    KrollCallback* callback = [args objectAtIndex:2];
+    
+    ZoomEnrollmentViewController *vc = [[Zoom sdk] createEnrollmentVC];
+    ZoomDelegate* delegate = [[ZoomDelegate alloc] initWithCallback:callback];
+    [vc prepareForEnrollmentWithDelegate:delegate userID:userId applicationPerUserEncryptionSecret:encryptionSecret secret:nil];
+    
+    [[TiApp app] showModalController:vc animated:false];
+}
+
+-(void)authenticate:(id)args
+{
+    NSString* userId = [args objectAtIndex:0];
+    NSString* encryptionSecret = [args objectAtIndex:1];
+    KrollCallback* callback = [args objectAtIndex:2];
+    
+    ZoomAuthenticationViewController *vc = [[Zoom sdk] createAuthenticationVC];
+    ZoomDelegate* delegate = [[ZoomDelegate alloc] initWithCallback:callback];
+    [vc prepareForAuthenticationWithDelegate:delegate userID:userId applicationPerUserEncryptionSecret:encryptionSecret];
+    
+    [[TiApp app] showModalController:vc animated:false];
+}
+
+-(id)sdkStatus {
+    return [[Zoom sdk] getStatus];
+}
+
+-(id)getUserEnrollmentStatus:(id)args {
+    NSString * userId = [args objectAtIndex:0];
+    ZoomUserEnrollmentStatus status = [[Zoom sdk] getUserEnrollmentStatusWithUserID:userId];
+    switch (status) {
+        case ZoomUserEnrollmentStatusUserEnrolled:
+            return @"Enrolled";
+        case ZoomUserEnrollmentStatusUserNotEnrolled:
+            return @"NotEnrolled";
+        case ZoomUserEnrollmentStatusUserInvalidated:
+            return @"Invalidated";
+    }
+}
+
+-(id)isUserEnrolled:(id)args {
+    NSString * userId = [args objectAtIndex:0];
+    ZoomUserEnrollmentStatus status =  [[Zoom sdk] getUserEnrollmentStatusWithUserID:userId];
+    return status == ZoomUserEnrollmentStatusUserEnrolled;
+}
+
+- (void) _fireCallback:(KrollCallback*)callback withObject:(id)obj {
+    if (callback != nil) {
+        KrollContext* context = [callback context];
+        [[TiApp app] fireEvent:callback withObject:obj remove:NO context:(id<TiEvaluator>)context.delegate thisObject:nil];
+    }
+}
+
+- (NSString*)_getSdkStatusString {
+    switch ([[Zoom sdk] getStatus]) {
+        case ZoomSDKStatusNeverInitialized:
+            return @"NeverInitialized";
+        case ZoomSDKStatusInitialized:
+            return @"Initialized";
+        case ZoomSDKStatusNetworkIssues:
+            return @"NetworkIssues";
+        case ZoomSDKStatusInvalidToken:
+            return @"InvalidToken";
+        case ZoomSDKStatusDeviceInsecure:
+            return @"DeviceInsecure";
+        case ZoomSDKStatusVersionDeprecated:
+            return @"VersionDeprecated";
+    }
+    return nil;
+}
+
 @end
+
+@implementation ZoomDelegate
+- (instancetype)initWithCallback:(KrollCallback*)callback {
+    if (self = [super init]) {
+        _callback = callback;
+        [_callback retain];
+    }
+    return self;
+}
+
+- (void) onZoomEnrollmentResultWithResult:(ZoomEnrollmentResult *)result {
+
+
+    ZoomEnrollmentStatus status = [result status];
+    NSDictionary* resultDict = @{
+                                 @"successful": (status == ZoomEnrollmentStatusUserWasEnrolled ? @YES : @NO),
+                                 @"status": [self convertZoomEnrollmentStatus: status]
+                                 };
+    
+    KrollContext* context = [_callback context];
+    [[TiApp app] fireEvent:_callback withObject:resultDict remove:NO context:(id<TiEvaluator>)context.delegate thisObject:nil];
+    
+    RELEASE_TO_NIL(_callback)
+}
+
+- (void) onZoomAuthenticationResultWithResult:(ZoomAuthenticationResult *)result {
+    
+    ZoomAuthenticationStatus status = [result status];
+    NSDictionary* resultDict = @{
+                                 @"successful": (status == ZoomAuthenticationStatusUserWasAuthenticated ? @YES : @NO),
+                                 @"status": [self convertZoomAuthenticationStatus: status]
+                                 };
+    
+    KrollContext* context = [_callback context];
+    [[TiApp app] fireEvent:_callback withObject:resultDict remove:NO context:(id<TiEvaluator>)context.delegate thisObject:nil];
+    
+    RELEASE_TO_NIL(_callback)
+}
+
+- (NSString*)convertZoomEnrollmentStatus:(ZoomEnrollmentStatus)status {
+    // Note: These string values should match exactly with the Android implementation
+    switch (status) {
+        case ZoomEnrollmentStatusUserWasEnrolled:
+            return @"Enrolled";
+        case ZoomEnrollmentStatusUserNotEnrolled:
+            return @"NotEnrolled";
+        case ZoomEnrollmentStatusFailedBecauseOfTimeout:
+            return @"Timeout";
+        case ZoomEnrollmentStatusFailedBecauseOfLowMemory:
+            return @"LowMemory";
+        case ZoomEnrollmentStatusFailedBecauseUserCancelled:
+            return @"UserCancelled";
+        case ZoomEnrollmentStatusFailedBecauseAppTokenNotValid:
+            return @"AppTokenNotValid";
+        case ZoomEnrollmentStatusFailedBecauseOfOSContextSwitch:
+            return @"OSContextSwitch";
+        case ZoomEnrollmentStatusFailedBecauseOfDiskWriteError:
+            return @"DiskWriteError";
+        case ZoomEnrollmentStatusFailedBecauseWifiNotOnInDevMode:
+            return @"WifiNotOnInDevMode";
+        case ZoomEnrollmentStatusFailedBecauseFingerprintDisabled:
+            return @"FingerprintDisabled";
+        case ZoomEnrollmentStatusFailedBecauseNoConnectionInDevMode:
+            return @"NoConnectionInDevMode";
+        case ZoomEnrollmentStatusFailedBecauseCameraPermissionDeniedByUser:
+        case ZoomEnrollmentStatusFailedBecauseCameraPermissionDeniedByAdministrator:
+            return @"CameraPermissionsDenied";
+        case ZoomEnrollmentStatusUserFailedToProvideGoodEnrollment:
+        default:
+            return @"NotEnrolled";
+    }
+}
+
+- (NSString*)convertZoomAuthenticationStatus:(ZoomAuthenticationStatus)status {
+    // Note: These string values should match exactly with the Android implementation
+    switch (status) {
+        case ZoomAuthenticationStatusUserWasAuthenticated:
+            return @"Authenticated";
+        case ZoomAuthenticationStatusFailedBecauseOfTimeout:
+            return @"Timeout";
+        case ZoomAuthenticationStatusFailedBecauseOfLowMemory:
+            return @"LowMemory";
+        case ZoomAuthenticationStatusFailedBecauseUserCancelled:
+            return @"UserCancelled";
+        case ZoomAuthenticationStatusFailedBecauseUserMustEnroll:
+            return @"UserMustEnroll";
+        case ZoomAuthenticationStatusFailedBecauseAppTokenNotValid:
+            return @"AppTokenNotValid";
+        case ZoomAuthenticationStatusFailedBecauseOfOSContextSwitch:
+            return @"OSContextSwitch";
+        case ZoomAuthenticationStatusFailedBecauseTouchIDUnavailable:
+            return @"TouchIDUnavailable";
+        case ZoomAuthenticationStatusFailedBecauseWifiNotOnInDevMode:
+            return @"WifiNotOnInDevMode";
+        case ZoomAuthenticationStatusFailedBecauseNoConnectionInDevMode:
+            return @"NoConnectionInDevMode";
+        case ZoomAuthenticationStatusFailedBecauseCameraPermissionDenied:
+            return @"CameraPermissionDenied";
+        case ZoomAuthenticationStatusFailedBecauseTouchIDSettingsChanged:
+            return @"TouchIDSettingsChanged";
+        case ZoomAuthenticationStatusFailedBecauseUserFailedAuthentication:
+            return @"FailedAuthentication";
+        case ZoomAuthenticationStatusFailedToAuthenticateTooManyTimesAndUserWasDeleted:
+            return @"FailedAndWasDeleted";
+    }
+    return (NSString*)nil;
+}
+@end
+
+
