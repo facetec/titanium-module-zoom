@@ -1,39 +1,60 @@
-// This is a test harness for your module
-// You should do something interesting in this harness
-// to test out the module and to provide instructions
-// to users on how to use it by example.
+var zoom = require('com.facetec.ti.zoom');
 
+var appToken = "7wZrpTubvnDjAtheUYWWQi8upsT47pdw"; 
+var userId = "myUserId";
+var encryptionSecret = "myUserEncryptionSecret";
 
 // open a single window
 var win = Ti.UI.createWindow({
-	backgroundColor:'white'
+    backgroundColor:'white'
 });
-var label = Ti.UI.createLabel();
-win.add(label);
+
+var container = Ti.UI.createView({layout: "vertical", height: Ti.UI.SIZE}); 
+
+var enrollButton = Ti.UI.createButton({title: "Enroll", enabled: false});
+enrollButton.addEventListener("click", startEnrollment);
+
+var authButton = Ti.UI.createButton({title: "Authenticate", enabled: false});
+authButton.addEventListener("click", startAuthentication);
+
+var versionStr = "Zoom SDK v" + zoom.version;
+
+container.add(enrollButton);
+container.add(authButton);
+container.add(Ti.UI.createLabel({text: versionStr, top: "20dp", font: {fontSize: "10sp"}})); 
+win.add(container);
 win.open();
 
-// TODO: write your module tests here
-var zoomauthentication = require('com.facetec.ti.zoom');
-Ti.API.info("module is => " + zoomauthentication);
-
-label.text = zoomauthentication.example();
-
-Ti.API.info("module exampleProp is => " + zoomauthentication.exampleProp);
-zoomauthentication.exampleProp = "This is a test value";
-
-if (Ti.Platform.name == "android") {
-	var proxy = zoomauthentication.createExample({
-		message: "Creating an example Proxy",
-		backgroundColor: "red",
-		width: 100,
-		height: 100,
-		top: 100,
-		left: 150
-	});
-
-	proxy.printMessage("Hello world!");
-	proxy.message = "Hi world!.  It's me again.";
-	proxy.printMessage("Hello world!");
-	win.add(proxy);
+function onInitialize(result) {
+    if (result.successful) {
+        enrollButton.enabled = true;
+        authButton.enabled = true;
+    }
+    else {
+        alert("Initialize failed: " + result.status);
+    }
 }
 
+function startEnrollment() {
+    zoom.enroll(userId, encryptionSecret, function(result) {
+        alert("Enrollment result: " + JSON.stringify(result));
+    });
+}
+
+function startAuthentication() {
+    if (zoom.isUserEnrolled(userId)) {
+        zoom.authenticate(userId, encryptionSecret, function(result) {
+            alert("Auth result: " + JSON.stringify(result));
+        });
+    }
+    else {
+        alert("User isn't enrolled.");
+    }
+}
+
+try {
+    zoom.initialize(appToken, onInitialize);
+}
+catch (e) {
+    alert ("Init error: " + e.message);
+}
