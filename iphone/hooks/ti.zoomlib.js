@@ -54,14 +54,6 @@ exports.init = function(logger, config, cli, appc) {
             var xcodeProject = data.args[0];
             var xobjs = xcodeProject.hash.project.objects;
 
-            logger.info("greg start: " + xcodeProject.getFirstTarget());
-
-            if (xcodeProject.pbxEmbedFrameworksBuildPhaseObj) {
-                logger.info("greg good");
-            } else {
-                logger.info("greg bad");
-            }
-
             if ( typeof builder.generateXcodeUuid !== 'function') {
                 var uuidIndex = 1;
                 var uuidRegExp = /^(0{18}\d{6})$/;
@@ -86,7 +78,6 @@ exports.init = function(logger, config, cli, appc) {
 
             // Zoom custom: Enable swift in xcode project
             addSwiftImports(xcodeProject, data.ctx.buildDir, logger);
-            addSwiftSupport(xcodeProject, modulePath, logger);
         }
     });
 };
@@ -290,27 +281,11 @@ function createPBXRunScriptNativeTarget(xobjs, script_uuid) {
     }
 }
 
-function addSwiftSupport(xcodeProject, modulePath, logger) {
-    var COMMENT_KEY = /_comment$/;
-    var buildConfigs = xcodeProject.pbxXCBuildConfigurationSection();
-
-    for (configName in buildConfigs) {
-        if (!COMMENT_KEY.test(configName)) {
-            var buildConfig = buildConfigs[configName];
-            xcodeProject.updateBuildProperty('SWIFT_VERSION', '3.0', buildConfig.name);
-            xcodeProject.updateBuildProperty('SWIFT_OPTIMIZATION_LEVEL', '"-Onone"', buildConfig.name);
-            xcodeProject.updateBuildProperty('ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES', 'YES', buildConfig.name);
-        }
-    }
-}
-
 /*
   Adds a Swift file with specific imports.  Otherwise, XCode does not embed necessary libraries.
 */
 function addSwiftImports(xcodeProject, buildDir, logger) {
-    logger.info("addSwiftImports");
     if (exports.swiftImports && exports.swiftImports.length) {
-      logger.info("addSwiftImports go");
         var fs = require('fs');
         var fileName = 'SwiftImports.swift';
         
@@ -323,6 +298,12 @@ function addSwiftImports(xcodeProject, buildDir, logger) {
             encoding : 'utf-8',
             flag : 'w'
         });
-        xcodeProject.addSourceFile(fileName, null, "CustomTemplate");
+        
+        // Workaround for node-xcode bug where addSourceFile() throws exception if 'PBXVariantGroup' type doesn't exist.
+        if (!xcodeProject.hash.project.objects['PBXVariantGroup']) {
+            xcodeProject.hash.project.objects['PBXVariantGroup'] = {};
+        }
+        
+        xcodeProject.addSourceFile(fileName, null, "Other Sources");
     }
 }
