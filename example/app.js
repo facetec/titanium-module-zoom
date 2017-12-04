@@ -1,6 +1,6 @@
 var zoom = require('com.facetec.ti.zoom');
 
-var appToken = "7wZrpTubvnDjAtheUYWWQi8upsT47pdw"; 
+var appToken = "ENTER_YOUR_APP_TOKEN"; 
 var userId = "myUserId";
 var encryptionSecret = "myUserEncryptionSecret";
 

@@ -15,4 +15,4 @@ name: ZoomAuthentication
 moduleid: com.facetec.ti.zoom
 guid: dcd1184e-c696-46a8-ae8f-5b9faef2ffa7
 platform: iphone
-minsdk: 6.0.4.GA
+minsdk: 6.3.0.GA
