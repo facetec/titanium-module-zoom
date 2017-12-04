@@ -14,6 +14,5 @@ iphone/build
 iphone/*.zip
 iphone/Resources
 iphone/**/xcuserdata/**
-iphone/module.xcconfig
 android/java-sources.txt
 iphone/platform/ZoomAuthentication.framework

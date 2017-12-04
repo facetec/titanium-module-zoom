@@ -47,7 +47,7 @@ exports.init = function(logger, config, cli, appc) {
             //modulePath + '/Resources/ZoomAuthentication.framework/strip-unused-architectures-from-target.sh';//'<path-to-strip-frameworks-script>/strip-frameworks.sh'; // Or set to null if not required
             var frameworkPaths = [
             // Replace with the path of your embedded framework. Make sure the path is relative to `build/iphone`
-            modulePath + '/Resources/ZoomAuthentication.framework'];
+            modulePath + '/platform/ZoomAuthentication.framework'];
             // ---
 
             var builder = this;
