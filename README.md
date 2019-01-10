@@ -1,3 +1,15 @@
+**Limited Support Notice**
+--------------------------
+This plugin, bindings, and sample code are meant for example purposes only.  This example will no longer run out of the box from this Github project.  This project is intended to be reference code for how you can integrate ZoOm as a native plugin in the Appcelerator/Titanium ecosystem.  This example was based on an earlier version of ZoOm (6.5.0), which we no longer support and will not function if you attempt to use it.
+
+If you are familiar with Appcelerator/Titanium and Native Modules in these ecosystems, this plugin and the sample provided is 90% of the work to get ZoOm working in your Appcelerator/Titanium app.  The remaining work is in updating the bindings to our latest released Native iOS and Android libraries (7.0.0)+, which can be downloaded here - https://dev.zoomlogin.com/zoomsdk/#/downloads.
+
+Hopefully this is enough to get you going!
+
+If you have any more technical questions please feel free to contact us at support@zoomlogin.com
+------------------------------
+**End Limited Support Notice**
+
 Introduction
 ---------
 The Zoom module for Appcelerator Titanium provides access to the native Android and iOS version of  FaceTec's ZoOm SDK - 3D Face Login + TrueLiveness.  The latest versions of this module can be found under [releases](https://github.com/facetec/titanium-module-zoom/releases).
