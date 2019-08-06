@@ -1,6 +1,6 @@
 **Limited Support Notice**
 --------------------------
-This plugin, bindings, and sample code are meant for example purposes only.  This example will no longer run out of the box from this Github project.  This project is intended to be reference code for how you can integrate ZoOm as a native plugin in the Appcelerator/Titanium ecosystem.  This example was based on an earlier version of ZoOm (6.5.0), which we no longer support and will not function if you attempt to use it.
+This plugin, bindings, and sample code are meant for example purposes only.  This example will no longer run out of the box from this Github project.  This project is intended to be reference code for how you can integrate ZoOm as a native plugin in the Appcelerator/Titanium ecosystem.  This example is based on an earlier version of ZoOm (6.5.0) from mid-2018 that is no longer support and the APIs have changed (please see https://dev.zoomlogin.com/zoomsdk/#/ for latest version information).
 
 If you are familiar with Appcelerator/Titanium and Native Modules in these ecosystems, this plugin and the sample provided is 90% of the work to get ZoOm working in your Appcelerator/Titanium app.  The remaining work is in updating the bindings to our latest released Native iOS and Android libraries (7.0.0)+, which can be downloaded here - https://dev.zoomlogin.com/zoomsdk/#/downloads.
 
